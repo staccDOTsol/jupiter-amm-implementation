@@ -54,7 +54,7 @@ use super::loader::amm_factory;
 const JITOSOL_MINT: Pubkey = pubkey!("J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn");
 
 lazy_static! {
-    pub static ref TOKEN_MINT_AND_IN_AMOUNT: [(Pubkey, u64); 5] = [
+    pub static ref TOKEN_MINT_AND_IN_AMOUNT: [(Pubkey, u64); 7] = [
         (spl_token::native_mint::ID, 25_000_000_000),
         (JITOSOL_MINT, 8_000_000_000),
         (
@@ -63,6 +63,14 @@ lazy_static! {
         ),
         (constants::USDC_MINT, 1_110_000_000),
         (constants::USDT_MINT, 1_110_000_000),
+        (
+            pubkey!("BQpGv6LVWG1JRm1NdjerNSFdChMdAULJr3x9t2Swpump"),
+            1_000_000_000
+        ),
+        (
+            pubkey!("BGoJdfAA39yMVdeFpAx6EjsnBFUsEVvNqCc4zVpkotUt"),
+            1_000_000_000
+        ),
     ];
     pub static ref TOKEN2022_MINT_AND_IN_AMOUNT: [(Pubkey, u64); 0] = [];
     pub static ref TOKEN_MINT_TO_IN_AMOUNT: HashMap<Pubkey, u64> = {
@@ -575,17 +583,28 @@ impl ProgramTestUser {
 /// Update AMM with only the accounts it requested,
 /// to avoid relying on side effects
 fn update_amm_precise(amm: &mut dyn Amm, account_map: &AccountMap) -> Result<()> {
+    println!("Starting update_amm_precise");
+    
+    let accounts_to_update = amm.get_accounts_to_update();
+    println!("Accounts to update: {:?}", accounts_to_update);
+
     let account_map_requested = HashMap::from_iter(
-        amm.get_accounts_to_update()
+        accounts_to_update
             .into_iter()
             .filter_map(|address| {
-                account_map
-                    .get(&address)
-                    .cloned()
-                    .map(|account| (address, account))
+                let account = account_map.get(&address).cloned();
+                println!("Address: {:?}, Account found: {}", address, account.is_some());
+                account.map(|acc| (address, acc))
             }),
     );
-    amm.update(&account_map_requested)
+    
+    println!("Filtered account map size: {}", account_map_requested.len());
+
+    println!("Calling amm.update");
+    let result = amm.update(&account_map_requested);
+    
+    println!("AMM update result: {:?}", result);
+    result
 }
 
 impl AmmTestHarness {
@@ -652,22 +671,19 @@ impl AmmTestHarness {
         UiAccount::decode(&keyed_account.account).unwrap()
     }
 
-    pub fn update_amm(&self, amm: &mut dyn Amm) {
+    pub fn update_amm(&self, amm: &mut dyn Amm) -> Result<()> {
         let accounts_to_update = amm.get_accounts_to_update();
 
         let account_map = self
             .client
-            .get_multiple_accounts(&accounts_to_update)
-            .unwrap()
+            .get_multiple_accounts(&accounts_to_update)?
             .into_iter()
             .zip(accounts_to_update)
-            .fold(HashMap::new(), |mut m, (account, address)| {
-                if let Some(account) = account {
-                    m.insert(address, account);
-                }
-                m
-            });
-        amm.update(&account_map).unwrap();
+            .filter_map(|(account, address)| account.map(|acc| (address, acc)))
+            .collect::<HashMap<_, _>>();
+
+        amm.update(&account_map)?;
+        Ok(())
     }
 
     fn load_accounts_snapshot(&self) -> AccountsSnapshot {

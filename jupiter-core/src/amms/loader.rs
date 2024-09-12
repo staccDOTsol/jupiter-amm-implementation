@@ -4,7 +4,7 @@ use anyhow::{anyhow, Result};
 use jupiter_amm_interface::{Amm, AmmContext, KeyedAccount};
 use solana_sdk::pubkey::Pubkey;
 
-use super::spl_token_swap_amm::{SplTokenSwapAmm, SPL_TOKEN_SWAP_PROGRAMS};
+use super::spl_token_swap_amm::{SplTokenSwapAmm};
 
 pub fn amm_factory(
     keyed_account: &KeyedAccount,
@@ -13,17 +13,10 @@ pub fn amm_factory(
 ) -> Result<Box<dyn Amm + Send + Sync>> {
     let owner = keyed_account.account.owner;
 
-    // Add your AMM here
-    if SPL_TOKEN_SWAP_PROGRAMS.contains_key(&owner) {
-        Ok(Box::new(SplTokenSwapAmm::from_keyed_account(
+    // Add your AMM herROGRAMS.contains_key(&owner) {
+        Ok(Box::new(crate::amms::spl_token_swap_amm::Fomo3dCpAmm::from_keyed_account(
             keyed_account,
             amm_context,
         )?))
-    } else {
-        Err(anyhow!(
-            "Unsupported pool {}, from owner {}",
-            keyed_account.key,
-            keyed_account.account.owner
-        ))
-    }
+   
 }

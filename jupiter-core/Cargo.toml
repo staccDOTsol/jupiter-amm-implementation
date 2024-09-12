@@ -9,7 +9,7 @@ anchor-lang = { workspace = true }
 solana-sdk = { workspace = true }
 solana-client = { workspace = true }
 solana-account-decoder = { workspace = true }
-solana-program-test = "~1.16"
+solana-program-test = "^1.17.3"
 spl-token-swap = { version = "3.0.0", features = ["no-entrypoint"] }
 serde_json = "1.0.82"
 anyhow = "1.0"
@@ -33,3 +33,4 @@ spl-associated-token-account = { workspace = true, features = [
     "no-entrypoint",
 ] }
 spl-token-2022 = { workspace = true, features = ["no-entrypoint"] }
+raydium-cp-swap = "0.1.138"
