@@ -448,15 +448,18 @@ impl Amm for Fomo3dCpAmm {
             (Some(vault_0), Some(vault_1)) => (vault_0, vault_1),
             _ => return Err(anyhow!("Vault amount underflow")),
         };
+        let (input_token_creator_rate, input_token_lp_rate) = if zero_for_one {
+            (amm_config.token_0_creator_rate, amm_config.token_0_lp_rate)
+        } else {
+            (amm_config.token_1_creator_rate, amm_config.token_1_lp_rate)
+        };
 
         let swap_result = raydium_cp_swap::curve::CurveCalculator::swap_base_input(
             actual_amount_in.into(),
             total_token_0_amount.into(),
             total_token_1_amount.into(),
-            amm_config.token_0_creator_rate,
-            amm_config.token_1_creator_rate,
-            amm_config.token_0_lp_rate,
-            amm_config.token_1_lp_rate,
+            input_token_creator_rate,
+            input_token_lp_rate
         )
         .context("Swap failed")?;
         let amount_out: u64 = swap_result.destination_amount_swapped.try_into()?;
